@@ -1,8 +1,8 @@
 [gd_scene load_steps=7 format=3 uid="uid://cvuflej54w2wu"]
 
-[ext_resource type="PackedScene" path="res://Player/Player.tscn" id="1"]
+[ext_resource type="PackedScene" uid="uid://byxfii3b8xulw" path="res://Player/Player.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://Levels/Main/Geometry/Floor.tscn" id="2"]
-[ext_resource type="Environment" path="res://Levels/Main/Environment.tres" id="3"]
+[ext_resource type="Environment" uid="uid://dabcknc8a4cp4" path="res://Levels/Main/Environment.tres" id="3"]
 [ext_resource type="Script" path="res://Levels/Main/L_Main.gd" id="4"]
 [ext_resource type="PackedScene" path="res://Levels/Main/Geometry/Wall.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://Levels/Main/Geometry/Cube.tscn" id="6"]

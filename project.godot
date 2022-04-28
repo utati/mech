@@ -13,7 +13,7 @@ _global_script_class_icons={}
 
 [application]
 
-config/name="FirstPersonStarter"
+config/name="mech"
 run/main_scene="res://Levels/Main/L_Main.tscn"
 config/icon="res://icon.png"
 config/features=PackedStringArray("4.0")

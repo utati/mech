@@ -1,17 +1,17 @@
-extends KinematicBody
+extends CharacterBody3D
 
 ###################-VARIABLES-####################
 
 # Camera
-export(float) var mouse_sensitivity = 8.0
-export(NodePath) var head_path = "Head"
-export(NodePath) var cam_path = "Head/Camera"
-export(float) var FOV = 80.0
+
+@export var mouse_sensitivity: float = 8.0
+@export var head_path: NodePath = "Head"
+@export var cam_path: NodePath = "Head/Camera"
+@export var FOV: float = 80.0
 var mouse_axis := Vector2()
-onready var head: Spatial = get_node(head_path)
-onready var cam: Camera = get_node(cam_path)
+@onready var head: Node3D = get_node(head_path)
+@onready var cam: Camera3D = get_node(cam_path)
 # Move
-var velocity := Vector3()
 var direction := Vector3()
 var move_axis := Vector2()
 var snap := Vector3()
@@ -19,13 +19,13 @@ var sprint_enabled := true
 var sprinting := false
 # Walk
 const FLOOR_MAX_ANGLE: float = deg2rad(46.0)
-export(float) var gravity = 30.0
-export(int) var walk_speed = 10
-export(int) var sprint_speed = 16
-export(int) var acceleration = 8
-export(int) var deacceleration = 10
-export(float, 0.0, 1.0, 0.05) var air_control = 0.3
-export(int) var jump_height = 10
+@export var gravity: float = 30.0
+@export var walk_speed: int = 10
+@export var sprint_speed: int = 16
+@export var acceleration: int  = 8
+@export var deacceleration: int  = 10
+@export_range( 0.0, 1.0, 0.05) var air_control: float = 0.3
+@export var jump_height: int = 10
 var _speed: int
 var _is_sprinting_input := false
 var _is_jumping_input := false
@@ -66,7 +66,7 @@ func walk(delta: float) -> void:
 	direction_input()
 	
 	if is_on_floor():
-		snap = -get_floor_normal() - get_floor_velocity() * delta
+		snap = -get_floor_normal() - get_platform_velocity() * delta
 		
 		# Workaround for sliding down after jump on slope
 		if velocity.y < 0:
@@ -86,7 +86,8 @@ func walk(delta: float) -> void:
 	
 	accelerate(delta)
 	
-	velocity = move_and_slide_with_snap(velocity, snap, Vector3.UP, true, 4, FLOOR_MAX_ANGLE)
+	#velocity = move_and_slide(velocity, snap, Vector3.UP, true, 4, FLOOR_MAX_ANGLE)
+	move_and_slide()
 	_is_jumping_input = false
 	_is_sprinting_input = false
 
@@ -97,6 +98,7 @@ func camera_rotation() -> void:
 	if mouse_axis.length() > 0:
 		var horizontal: float = -mouse_axis.x * (mouse_sensitivity / 100)
 		var vertical: float = -mouse_axis.y * (mouse_sensitivity / 100)
+		print("mouse: " + str(mouse_axis));
 		
 		mouse_axis = Vector2()
 		
@@ -104,9 +106,10 @@ func camera_rotation() -> void:
 		head.rotate_x(deg2rad(vertical))
 		
 		# Clamp mouse rotation
-		var temp_rot: Vector3 = head.rotation_degrees
-		temp_rot.x = clamp(temp_rot.x, -90, 90)
-		head.rotation_degrees = temp_rot
+		var temp_rot: Vector3 = head.rotation
+		temp_rot.x = clamp(temp_rot.x, deg2rad(-90), deg2rad(90))
+		print("rotation: " + str(temp_rot.x));
+		head.rotation = temp_rot
 
 
 func direction_input() -> void:
@@ -141,7 +144,7 @@ func accelerate(delta: float) -> void:
 		_temp_accel *= air_control
 	
 	# Interpolation
-	_temp_vel = _temp_vel.linear_interpolate(_target, _temp_accel * delta)
+	_temp_vel = _temp_vel.lerp(_target, _temp_accel * delta)
 	
 	velocity.x = _temp_vel.x
 	velocity.z = _temp_vel.z
