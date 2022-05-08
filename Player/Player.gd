@@ -15,20 +15,21 @@ var mouse_axis := Vector2()
 var direction := Vector3()
 var move_axis := Vector2()
 var snap := Vector3()
-var sprint_enabled := true
-var sprinting := false
 # Walk
 const FLOOR_MAX_ANGLE: float = deg2rad(46.0)
 @export var gravity: float = 30.0
 @export var walk_speed: int = 10
-@export var sprint_speed: int = 16
 @export var acceleration: int  = 8
 @export var deacceleration: int  = 10
 @export_range( 0.0, 1.0, 0.05) var air_control: float = 0.3
-@export var jump_height: int = 10
+#dash
+@export var dash_duration: float = 0.8
+@export var dash_speed: int = 20
+@export var dash_boost: float = 1.5
+var _dash_direction := Vector3()
+var _dash_timer: float = 0
 var _speed: int
-var _is_sprinting_input := false
-var _is_jumping_input := false
+var _is_dashing_input := false
 
 ##################################################
 
@@ -42,12 +43,9 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	move_axis.x = Input.get_action_strength("move_forward") - Input.get_action_strength("move_backward")
 	move_axis.y = Input.get_action_strength("move_right") - Input.get_action_strength("move_left")
-	
-	if Input.is_action_just_pressed("move_jump"):
-		_is_jumping_input = true
-	
-	if Input.is_action_pressed("move_sprint"):
-		_is_sprinting_input = true
+		
+	if Input.is_action_just_pressed("move_dash"):
+		_is_dashing_input = true
 
 
 # Called every physics tick. 'delta' is constant
@@ -72,7 +70,6 @@ func walk(delta: float) -> void:
 		if velocity.y < 0:
 			velocity.y = 0
 		
-		jump()
 	else:
 		# Workaround for 'vertical bump' when going off platform
 		if snap != Vector3.ZERO && velocity.y != 0:
@@ -82,14 +79,16 @@ func walk(delta: float) -> void:
 		
 		velocity.y -= gravity * delta
 	
-	sprint(delta)
+	_speed = walk_speed
+	
+	dash(delta)
 	
 	accelerate(delta)
 	
+	
 	#velocity = move_and_slide(velocity, snap, Vector3.UP, true, 4, FLOOR_MAX_ANGLE)
 	move_and_slide()
-	_is_jumping_input = false
-	_is_sprinting_input = false
+	_is_dashing_input = false
 
 
 func camera_rotation() -> void:
@@ -98,7 +97,6 @@ func camera_rotation() -> void:
 	if mouse_axis.length() > 0:
 		var horizontal: float = -mouse_axis.x * (mouse_sensitivity / 100)
 		var vertical: float = -mouse_axis.y * (mouse_sensitivity / 100)
-		print("mouse: " + str(mouse_axis));
 		
 		mouse_axis = Vector2()
 		
@@ -108,23 +106,26 @@ func camera_rotation() -> void:
 		# Clamp mouse rotation
 		var temp_rot: Vector3 = head.rotation
 		temp_rot.x = clamp(temp_rot.x, deg2rad(-90), deg2rad(90))
-		print("rotation: " + str(temp_rot.x));
 		head.rotation = temp_rot
 
 
 func direction_input() -> void:
 	direction = Vector3()
-	var aim: Basis = get_global_transform().basis
-	if move_axis.x >= 0.5:
-		direction -= aim.z
-	if move_axis.x <= -0.5:
-		direction += aim.z
-	if move_axis.y <= -0.5:
-		direction -= aim.x
-	if move_axis.y >= 0.5:
-		direction += aim.x
-	direction.y = 0
-	direction = direction.normalized()
+	print(_dash_timer)
+	if(is_dash_in_progress()):
+		direction = _dash_direction
+	else: 
+		var aim: Basis = get_global_transform().basis
+		if move_axis.x >= 0.5:
+			direction -= aim.z
+		if move_axis.x <= -0.5:
+			direction += aim.z
+		if move_axis.y <= -0.5:
+			direction -= aim.x
+		if move_axis.y >= 0.5:
+			direction += aim.x
+		direction.y = 0
+		direction = direction.normalized()
 
 
 func accelerate(delta: float) -> void:
@@ -158,23 +159,14 @@ func accelerate(delta: float) -> void:
 			velocity.z = 0
 
 
-func jump() -> void:
-	if _is_jumping_input:
-		velocity.y = jump_height
-		snap = Vector3.ZERO
+func dash(delta: float) -> void:
+	if _is_dashing_input:
+		_dash_timer = dash_duration
+		_dash_direction = direction
+	
+	if _dash_timer > 0.0:
+		_dash_timer -= delta
+		_speed = dash_speed
 
-
-func sprint(delta: float) -> void:
-	if can_sprint():
-		_speed = sprint_speed
-		cam.set_fov(lerp(cam.fov, FOV * 1.05, delta * 8))
-		sprinting = true
-		
-	else:
-		_speed = walk_speed
-		cam.set_fov(lerp(cam.fov, FOV, delta * 8))
-		sprinting = false
-
-
-func can_sprint() -> bool:
-	return (sprint_enabled and is_on_floor() and _is_sprinting_input and move_axis.x >= 0.5)
+func is_dash_in_progress() -> bool:
+	return _dash_timer > 0
