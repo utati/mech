@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://byxfii3b8xulw"]
+[gd_scene load_steps=4 format=3 uid="uid://byxfii3b8xulw"]
 
 [ext_resource type="Script" path="res://Player/Player.gd" id="1"]
+[ext_resource type="Curve" uid="uid://cl3kyaqjde12y" path="res://mech_step_curve.tres" id="2_83sus"]
 
 [sub_resource type="CapsuleShape3D" id="1"]
 
@@ -8,7 +9,10 @@
 collision_layer = 2
 collision_mask = 3
 script = ExtResource( "1" )
-walk_speed = 5
+walk_speed = 3
+step_duration = 1.0
+step_height = 0.5
+step_curve = ExtResource( "2_83sus" )
 dash_duration = 0.2
 dash_speed = 40
 dash_boost = 2.0

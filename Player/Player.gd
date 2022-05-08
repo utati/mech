@@ -22,6 +22,11 @@ const FLOOR_MAX_ANGLE: float = deg2rad(46.0)
 @export var acceleration: int  = 8
 @export var deacceleration: int  = 10
 @export_range( 0.0, 1.0, 0.05) var air_control: float = 0.3
+@export var step_duration: float = 0.3
+@export var step_height:float = 0.3
+@export var step_curve : Curve
+var _step_timer = 0
+@onready var _head_start_pos :Vector3 = head.position
 #dash
 @export var dash_duration: float = 0.8
 @export var dash_speed: int = 20
@@ -79,9 +84,10 @@ func walk(delta: float) -> void:
 		
 		velocity.y -= gravity * delta
 	
-	_speed = walk_speed
-	
-	dash(delta)
+	if is_dash_in_progress() || _is_dashing_input:
+		dash(delta)
+	else:
+		step(delta)
 	
 	accelerate(delta)
 	
@@ -111,7 +117,6 @@ func camera_rotation() -> void:
 
 func direction_input() -> void:
 	direction = Vector3()
-	print(_dash_timer)
 	if(is_dash_in_progress()):
 		direction = _dash_direction
 	else: 
@@ -170,3 +175,16 @@ func dash(delta: float) -> void:
 
 func is_dash_in_progress() -> bool:
 	return _dash_timer > 0
+	
+func step(delta: float) -> void:
+	_speed = walk_speed
+	print(_step_timer)
+	if direction.length() > 0.0 && _step_timer<=0:
+		_step_timer = step_duration
+	if _step_timer > 0:
+		var start_y = _head_start_pos.y
+		var y =  (step_curve.interpolate(step_duration - _step_timer) * step_height) + start_y
+		head.position.y = y
+		_step_timer-=delta
+		if(_step_timer < 0):
+			head.position.y = _head_start_pos.y
